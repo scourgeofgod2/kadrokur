@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const fillRandomButton = document.getElementById('fillRandomButton');
     const footballField = document.getElementById('footballField');
     const analysisContainer = document.getElementById('analysis-container');
+    const notification = document.getElementById('notification');
+    const notificationMessage = document.getElementById('notification-message');
+    let notificationTimeout;
 
     // --- OLAY DİNLEYİCİLERİ ---
     matchSizeSelect.addEventListener('change', generatePlayerRows);
@@ -19,6 +22,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- BAŞLANGIÇ ---
     generatePlayerRows();
+
+    // =======================================================================
+    // --- GÖRSEL ARABİRİM FONKSİYONLARI ---
+    // =======================================================================
+
+    /**
+     * Displays a custom pop-up notification at the bottom of the screen.
+     */
+    function showNotification(message, duration = 3000) {
+        if (notificationTimeout) {
+            clearTimeout(notificationTimeout);
+        }
+
+        notificationMessage.textContent = message;
+        notification.classList.add('show');
+
+        notificationTimeout = setTimeout(() => {
+            notification.classList.remove('show');
+        }, duration);
+    }
+
 
     // =======================================================================
     // --- ANA KONTROL FONKSİYONLARI ---
@@ -43,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function clearPreviousResults() {
-        footballField.querySelectorAll('.player-puck, .field-team-name').forEach(el => el.remove());
+        footballField.querySelectorAll('.player-marker, .field-team-name').forEach(el => el.remove());
         analysisContainer.innerHTML = '';
     }
 
@@ -93,12 +117,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (invalidInputs.length > 0) {
-            alert("Lütfen tüm oyuncu isimlerini girin ve isimlerin tekrar etmediğinden emin olun.");
+            showNotification("İsimleri girin veya benzersiz olduklarından emin olun.");
             invalidInputs.forEach(input => input.classList.add('error'));
             return null;
         }
         if (goalkeeperCount > 2) {
-            alert("Toplamda en fazla 2 kaleci seçebilirsiniz!");
+            showNotification("En fazla 2 kaleci seçebilirsiniz.");
             // Maybe add some visual feedback here in the future
             return null;
         }
@@ -164,35 +188,58 @@ document.addEventListener('DOMContentLoaded', () => {
     // =======================================================================
 
     function displayTeamsOnField(teams) {
-        footballField.insertAdjacentHTML('beforeend', `<div class="field-team-name team1">Maviler</div>`);
-        footballField.insertAdjacentHTML('beforeend', `<div class="field-team-name team2">Kırmızılar</div>`);
+        // Clear only markers, not team names if they already exist
+        footballField.querySelectorAll('.player-marker').forEach(el => el.remove());
+        if (!footballField.querySelector('.field-team-name')) {
+            footballField.insertAdjacentHTML('beforeend', `<div class="field-team-name team1">Maviler</div>`);
+            footballField.insertAdjacentHTML('beforeend', `<div class="field-team-name team2">Kırmızılar</div>`);
+        }
 
         const teamAPositions = calculatePositionsForTeam(teams.teamA, 'A');
         teams.teamA.forEach(player => {
             const position = teamAPositions[player.position].shift();
-            createPlayerPuck(player, position, 'team1');
+            createPlayerMarker(player, position, 'team1'); // Updated call
         });
 
         const teamBPositions = calculatePositionsForTeam(teams.teamB, 'B');
         teams.teamB.forEach(player => {
             const position = teamBPositions[player.position].shift();
-            createPlayerPuck(player, position, 'team2');
+            createPlayerMarker(player, position, 'team2'); // Updated call
         });
     }
 
     function calculatePositionsForTeam(teamPlayers, side) {
+        const isMobile = window.innerWidth <= 900;
         const positions = { GK: [], DEF: [], MID: [], FWD: [] };
-        const x_offsets = (side === 'A') ? { GK: 8, DEF: 25, MID: 40, FWD: 45 } : { GK: 92, DEF: 75, MID: 60, FWD: 55 };
 
-        ['GK', 'DEF', 'MID', 'FWD'].forEach(posType => {
-            const playersInPosition = teamPlayers.filter(p => p.position === posType);
-            const count = playersInPosition.length;
-            if (count === 0) return;
-            const y_gap = 100 / (count + 1);
-            for (let i = 0; i < count; i++) {
-                positions[posType].push({ x: x_offsets[posType], y: y_gap * (i + 1) });
-            }
-        });
+        if (isMobile) {
+            // Vertical layout for mobile
+            const y_offsets = (side === 'A') ? { GK: 8, DEF: 28, MID: 45, FWD: 60 } : { GK: 92, DEF: 72, MID: 55, FWD: 40 };
+
+            ['GK', 'DEF', 'MID', 'FWD'].forEach(posType => {
+                const playersInPosition = teamPlayers.filter(p => p.position === posType);
+                const count = playersInPosition.length;
+                if (count === 0) return;
+                const x_gap = 100 / (count + 1); // Spread players horizontally
+                for (let i = 0; i < count; i++) {
+                    positions[posType].push({ x: x_gap * (i + 1), y: y_offsets[posType] });
+                }
+            });
+        } else {
+            // Horizontal layout for desktop (original logic)
+            const x_offsets = (side === 'A') ? { GK: 8, DEF: 25, MID: 40, FWD: 45 } : { GK: 92, DEF: 75, MID: 60, FWD: 55 };
+
+            ['GK', 'DEF', 'MID', 'FWD'].forEach(posType => {
+                const playersInPosition = teamPlayers.filter(p => p.position === posType);
+                const count = playersInPosition.length;
+                if (count === 0) return;
+                const y_gap = 100 / (count + 1); // Spread players vertically
+                for (let i = 0; i < count; i++) {
+                    positions[posType].push({ x: x_offsets[posType], y: y_gap * (i + 1) });
+                }
+            });
+        }
+
         return positions;
     }
 
@@ -245,11 +292,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const statId = `player-${playerIndex}-${statName}-input`; // Benzersiz ID
         return `
         <div class="stat-control">
-            <label for="${statId}">${label}</label>
-            <div class="stat-input-wrapper">
+            <div class="stat-header">
+                <label for="${statId}">${label}</label>
                 <span class="stat-value">${defaultValue}</span>
-                <input type="range" id="${statId}" class="player-stat-slider player-${statName}-input" min="1" max="100" value="${defaultValue}">
             </div>
+            <input type="range" id="${statId}" class="player-stat-slider player-${statName}-input" min="1" max="100" value="${defaultValue}">
         </div>
     `;
     }
@@ -293,24 +340,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Add event listeners for all sliders in this card
             card.querySelectorAll('.player-stat-slider').forEach(slider => {
-                const valueSpan = slider.previousElementSibling;
+                const statControl = slider.closest('.stat-control');
+                const valueSpan = statControl.querySelector('.stat-value');
                 slider.addEventListener('input', (e) => {
-                    valueSpan.textContent = e.target.value;
+                    if (valueSpan) valueSpan.textContent = e.target.value;
                 });
             });
         }
     }
 
-    function createPlayerPuck(player, position, teamClass) {
+    function createPlayerMarker(player, position, teamClass) {
         if (!player || !position) return;
-        const puck = document.createElement('div');
-        puck.className = 'player-puck';
-        puck.style.left = `${position.x}%`;
-        puck.style.top = `${position.y}%`;
-        puck.style.backgroundColor = (teamClass === 'team1') ? 'var(--blue-team)' : 'var(--red-team)';
-        puck.innerHTML = `<span class="initial">${player.name.charAt(0).toUpperCase()}</span><span class="name">${player.name.split(' ')[0]}</span>`;
-        footballField.appendChild(puck);
-        makePlayerDraggable(puck);
+        const marker = document.createElement('div');
+        marker.className = `player-marker ${teamClass}`;
+        marker.style.left = `${position.x}%`;
+        marker.style.top = `${position.y}%`;
+
+        marker.innerHTML = `
+            <div class="jersey-icon">
+                <i class="fas fa-tshirt"></i>
+            </div>
+            <span class="marker-player-name">${player.name.split(' ')[0]}</span>
+        `;
+        footballField.appendChild(marker);
+        makePlayerDraggable(marker);
     }
 
     function makePlayerDraggable(element) {
@@ -344,16 +397,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function fillWithRandomPlayers() {
-        const names = ["Ahmet", "Burak", "Cem", "Deniz", "Emir", "Fatih", "Gökhan", "Hakan", "İlker", "Kerem", "Levent", "Mert", "Nasuh", "Ömer", "Polat", "Serkan", "Tuna", "Ufuk", "Volkan", "Yasin"];
-        playerInputsContainer.querySelectorAll('.player-input-row').forEach((row, index) => {
-            const nameInput = row.querySelector('.player-name-input');
-            if (nameInput.value === '') {
-                nameInput.value = names[Math.floor(Math.random() * names.length)];
-                row.querySelector('.player-pace-input').value = Math.floor(Math.random() * 40) + 50;
-                row.querySelector('.player-tech-input').value = Math.floor(Math.random() * 40) + 50;
-                row.querySelector('.player-pass-input').value = Math.floor(Math.random() * 40) + 50;
-                row.querySelector('.player-shot-input').value = Math.floor(Math.random() * 40) + 50;
-                row.querySelector('.player-def-input').value = Math.floor(Math.random() * 40) + 50;
+        const names = ["Ahmet", "Burak", "Cem", "Deniz", "Emir", "Fatih", "Gökhan", "Hakan", "İlker", "Kerem", "Levent", "Mert", "Nasuh", "Ömer", "Polat", "Serkan", "Tuna", "Ufuk", "Volkan", "Yasin", "Ali", "Veli", "Can", "Efe", "Kaan"];
+
+        // Shuffle names for uniqueness
+        const shuffledNames = shuffleArray([...names]);
+
+        const playerCards = playerInputsContainer.querySelectorAll('.player-card');
+
+        playerCards.forEach((card, index) => {
+            const nameInput = card.querySelector('.player-name-input');
+
+            if (nameInput.value.trim() === '') {
+                // Assign a unique name
+                nameInput.value = shuffledNames.pop() || `Oyuncu ${index + 1}`;
+
+                // Update stats
+                card.querySelectorAll('.player-stat-slider').forEach(slider => {
+                    const randomValue = Math.floor(Math.random() * 41) + 50; // Random value between 50 and 90
+                    slider.value = randomValue;
+
+                    // Update the visual display of the stat value
+                    const statControl = slider.closest('.stat-control');
+                    const valueSpan = statControl.querySelector('.stat-value');
+                    if (valueSpan) {
+                        valueSpan.textContent = randomValue;
+                    }
+                });
             }
         });
     }
