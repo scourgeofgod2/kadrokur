@@ -161,25 +161,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const outfieldPlayers = players.filter(p => p.position !== 'GK');
         let teamA = [], teamB = [];
 
+        // Add a temporary 'rawPower' based on a simple average for balancing
+        outfieldPlayers.forEach(p => {
+            p.rawPower = (p.pace + p.technique + p.passing + p.shooting + p.defense) / 5;
+        });
+
         if (goalkeepers.length > 0) { teamA.push(goalkeepers.shift()); }
         if (goalkeepers.length > 0) { teamB.push(goalkeepers.shift()); }
 
-        // Aynı güçteki oyuncuları karıştırarak rastgelelik kat
-        const sortedOutfielders = outfieldPlayers.sort((a, b) => b.power - a.power);
+        // Sort and shuffle based on the new rawPower
+        const sortedOutfielders = outfieldPlayers.sort((a, b) => b.rawPower - a.rawPower);
         const shuffledOutfielders = shuffleArray(sortedOutfielders);
 
-        let teamAPower = teamA.reduce((sum, p) => sum + p.power, 0);
-        let teamBPower = teamB.reduce((sum, p) => sum + p.power, 0);
+        // Balance teams using rawPower. Goalkeepers are balanced by their main 'power' stat.
+        let teamARawPower = teamA.reduce((sum, p) => sum + p.power, 0); // GKs use their weighted power
+        let teamBRawPower = teamB.reduce((sum, p) => sum + p.power, 0);
 
         shuffledOutfielders.forEach(player => {
-            if (teamAPower <= teamBPower) {
+            if (teamARawPower <= teamBRawPower) {
                 teamA.push(player);
-                teamAPower += player.power;
+                teamARawPower += player.rawPower;
             } else {
                 teamB.push(player);
-                teamBPower += player.power;
+                teamBRawPower += player.rawPower;
             }
         });
+
+        // Clean up the temporary property if necessary (optional, as it's just for this scope)
+        outfieldPlayers.forEach(p => delete p.rawPower);
+
         return { teamA, teamB };
     }
 
@@ -367,22 +377,66 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function makePlayerDraggable(element) {
-        element.onmousedown = function (event) {
-            if (event.button !== 0) return;
+        let isDragging = false;
+
+        function dragStart(event) {
+            // Prevent text selection, etc.
+            if (event.type === 'mousedown' && event.button !== 0) return;
             event.preventDefault();
+            isDragging = true;
+
+            // Add move and end listeners to the document
+            document.addEventListener('mousemove', dragMove);
+            document.addEventListener('mouseup', dragEnd);
+            document.addEventListener('touchmove', dragMove, { passive: false }); // passive:false to allow preventDefault
+            document.addEventListener('touchend', dragEnd);
+
+            // Add a class to indicate dragging
+            element.classList.add('dragging');
+        }
+
+        function dragMove(event) {
+            if (!isDragging) return;
+
+            // Prevent scrolling on touch devices
+            event.preventDefault();
+
             const fieldRect = footballField.getBoundingClientRect();
-            function onMouseMove(moveEvent) {
-                let x = ((moveEvent.clientX - fieldRect.left) / fieldRect.width) * 100;
-                let y = ((moveEvent.clientY - fieldRect.top) / fieldRect.height) * 100;
-                x = Math.max(4, Math.min(96, x));
-                y = Math.max(5, Math.min(95, y));
-                element.style.left = `${x}%`;
-                element.style.top = `${y}%`;
-            }
-            function onMouseUp() { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
-        };
+
+            // Get coordinates from either mouse or touch event
+            const clientX = event.type === 'touchmove' ? event.touches[0].clientX : event.clientX;
+            const clientY = event.type === 'touchmove' ? event.touches[0].clientY : event.clientY;
+
+            let x = ((clientX - fieldRect.left) / fieldRect.width) * 100;
+            let y = ((clientY - fieldRect.top) / fieldRect.height) * 100;
+
+            // Clamp position within the field boundaries
+            x = Math.max(4, Math.min(96, x));
+            y = Math.max(5, Math.min(95, y));
+
+            element.style.left = `${x}%`;
+            element.style.top = `${y}%`;
+        }
+
+        function dragEnd() {
+            if (!isDragging) return;
+            isDragging = false;
+
+            // Remove listeners from the document
+            document.removeEventListener('mousemove', dragMove);
+            document.removeEventListener('mouseup', dragEnd);
+            document.removeEventListener('touchmove', dragMove);
+            document.removeEventListener('touchend', dragEnd);
+
+            // Remove dragging class
+            element.classList.remove('dragging');
+        }
+
+        // Add start listeners
+        element.addEventListener('mousedown', dragStart);
+        element.addEventListener('touchstart', dragStart, { passive: false });
+
+        // Prevent default browser drag behavior
         element.ondragstart = () => false;
     }
 
@@ -407,23 +461,21 @@ document.addEventListener('DOMContentLoaded', () => {
         playerCards.forEach((card, index) => {
             const nameInput = card.querySelector('.player-name-input');
 
-            if (nameInput.value.trim() === '') {
-                // Assign a unique name
-                nameInput.value = shuffledNames.pop() || `Oyuncu ${index + 1}`;
+            // Always assign a new name and stats, removing the check for empty value
+            nameInput.value = shuffledNames.pop() || `Oyuncu ${index + 1}`;
 
-                // Update stats
-                card.querySelectorAll('.player-stat-slider').forEach(slider => {
-                    const randomValue = Math.floor(Math.random() * 41) + 50; // Random value between 50 and 90
-                    slider.value = randomValue;
+            // Update stats
+            card.querySelectorAll('.player-stat-slider').forEach(slider => {
+                const randomValue = Math.floor(Math.random() * 41) + 50; // Random value between 50 and 90
+                slider.value = randomValue;
 
-                    // Update the visual display of the stat value
-                    const statControl = slider.closest('.stat-control');
-                    const valueSpan = statControl.querySelector('.stat-value');
-                    if (valueSpan) {
-                        valueSpan.textContent = randomValue;
-                    }
-                });
-            }
+                // Update the visual display of the stat value
+                const statControl = slider.closest('.stat-control');
+                const valueSpan = statControl.querySelector('.stat-value');
+                if (valueSpan) {
+                    valueSpan.textContent = randomValue;
+                }
+            });
         });
     }
 
