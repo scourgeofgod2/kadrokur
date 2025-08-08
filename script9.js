@@ -55,16 +55,17 @@ document.addEventListener('DOMContentLoaded', () => {
      * Input alanlarındaki oyuncu bilgilerini okur, doğrular ve işlenmeye hazır hale getirir.
      */
     function readAndValidatePlayers() {
-        const playerRows = playerInputsContainer.querySelectorAll('.player-input-row');
+        const playerCards = playerInputsContainer.querySelectorAll('.player-card'); // Use new class
         const players = [];
         const invalidInputs = [];
         const seenNames = new Set();
         let goalkeeperCount = 0;
 
-        playerRows.forEach(row => row.querySelector('.player-name-input').classList.remove('error'));
+        // Clear previous errors from name inputs
+        playerCards.forEach(card => card.querySelector('.player-name-input').classList.remove('error'));
 
-        playerRows.forEach((row, index) => {
-            const nameInput = row.querySelector('.player-name-input');
+        playerCards.forEach((card, index) => { // Iterate over cards
+            const nameInput = card.querySelector('.player-name-input');
             const name = nameInput.value.trim();
 
             if (name === '') {
@@ -74,14 +75,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             seenNames.add(name.toLowerCase());
 
-            const positionSelect = row.querySelector('.player-position-select');
+            const positionSelect = card.querySelector('.player-position-select');
             if (positionSelect.value === 'GK') goalkeeperCount++;
 
-            const pace = Math.max(1, Math.min(100, parseInt(row.querySelector('.player-pace-input').value) || 50));
-            const technique = Math.max(1, Math.min(100, parseInt(row.querySelector('.player-tech-input').value) || 50));
-            const passing = Math.max(1, Math.min(100, parseInt(row.querySelector('.player-pass-input').value) || 50));
-            const shooting = Math.max(1, Math.min(100, parseInt(row.querySelector('.player-shot-input').value) || 50));
-            const defense = Math.max(1, Math.min(100, parseInt(row.querySelector('.player-def-input').value) || 50));
+            // Reading from range sliders works the same way, .value gives the number as a string
+            const pace = Math.max(1, Math.min(100, parseInt(card.querySelector('.player-pace-input').value) || 50));
+            const technique = Math.max(1, Math.min(100, parseInt(card.querySelector('.player-tech-input').value) || 50));
+            const passing = Math.max(1, Math.min(100, parseInt(card.querySelector('.player-pass-input').value) || 50));
+            const shooting = Math.max(1, Math.min(100, parseInt(card.querySelector('.player-shot-input').value) || 50));
+            const defense = Math.max(1, Math.min(100, parseInt(card.querySelector('.player-def-input').value) || 50));
 
             players.push({
                 id: `p${index}`, name, pace, technique, passing, shooting, defense,
@@ -97,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (goalkeeperCount > 2) {
             alert("Toplamda en fazla 2 kaleci seçebilirsiniz!");
+            // Maybe add some visual feedback here in the future
             return null;
         }
         return players;
@@ -235,29 +238,66 @@ document.addEventListener('DOMContentLoaded', () => {
         return card;
     }
 
+    /**
+     * Her bir yetenek (stat) için bir kontrol elemanı (slider ve değer göstergesi) oluşturur.
+     */
+    function createStatControl(label, statName, defaultValue, playerIndex) {
+        const statId = `player-${playerIndex}-${statName}-input`; // Benzersiz ID
+        return `
+        <div class="stat-control">
+            <label for="${statId}">${label}</label>
+            <div class="stat-input-wrapper">
+                <span class="stat-value">${defaultValue}</span>
+                <input type="range" id="${statId}" class="player-stat-slider player-${statName}-input" min="1" max="100" value="${defaultValue}">
+            </div>
+        </div>
+    `;
+    }
+
     function generatePlayerRows() {
         const playerCount = parseInt(matchSizeSelect.value.split('-')[0]) * 2;
-        playerInputsContainer.innerHTML = '';
+        playerInputsContainer.innerHTML = ''; // Clear existing players
 
         for (let i = 1; i <= playerCount; i++) {
-            const row = document.createElement('div');
-            row.className = 'player-input-row';
-            row.innerHTML = `
+            const card = document.createElement('div');
+            card.className = 'player-card';
+
+            card.innerHTML = `
+            <div class="player-card-header">
+                <i class="fas fa-user-circle player-icon"></i>
                 <input type="text" class="player-name-input" placeholder="Oyuncu ${i}">
-                <input type="number" class="player-pace-input" min="1" max="100" value="75">
-                <input type="number" class="player-tech-input" min="1" max="100" value="75">
-                <input type="number" class="player-pass-input" min="1" max="100" value="75">
-                <input type="number" class="player-shot-input" min="1" max="100" value="75">
-                <input type="number" class="player-def-input" min="1" max="100" value="75">
-                <select class="player-position-select">
-                    <option value="GK">Kaleci</option>
-                    <option value="DEF">Defans</option>
-                    <option value="MID" selected>Orta Saha</option>
-                    <option value="FWD">Forvet</option>
-                </select>
-            `;
-            row.querySelector('.player-name-input').addEventListener('input', (e) => e.target.classList.remove('error'));
-            playerInputsContainer.appendChild(row);
+                <div class="position-selector-wrapper">
+                    <select class="player-position-select">
+                        <option value="GK">KL</option>
+                        <option value="DEF">DF</option>
+                        <option value="MID" selected>OS</option>
+                        <option value="FWD">FV</option>
+                    </select>
+                </div>
+            </div>
+            <div class="player-card-body">
+                <div class="stat-grid">
+                    ${createStatControl('HIZ', 'pace', 75, i)}
+                    ${createStatControl('TEK', 'tech', 75, i)}
+                    ${createStatControl('PAS', 'pass', 75, i)}
+                    ${createStatControl('ŞUT', 'shot', 75, i)}
+                    ${createStatControl('DEF', 'def', 75, i)}
+                </div>
+            </div>
+        `;
+
+            playerInputsContainer.appendChild(card);
+
+            // Add event listener to the name input for error handling
+            card.querySelector('.player-name-input').addEventListener('input', (e) => e.target.classList.remove('error'));
+
+            // Add event listeners for all sliders in this card
+            card.querySelectorAll('.player-stat-slider').forEach(slider => {
+                const valueSpan = slider.previousElementSibling;
+                slider.addEventListener('input', (e) => {
+                    valueSpan.textContent = e.target.value;
+                });
+            });
         }
     }
 
