@@ -201,18 +201,28 @@ hr {
     text-shadow: 0 0 5px rgba(231, 76, 60, 0.5);
 }
 
-.position-selector-wrapper {
+/* Custom Select Dropdown */
+.custom-select-wrapper {
     position: relative;
+    width: 80px; /* Fixed width for the dropdown trigger */
+    flex-shrink: 0;
+}
+
+.custom-select-trigger {
     background-color: rgba(0, 0, 0, 0.3);
     border-radius: 6px;
+    padding: 8px 12px;
+    color: var(--text-light);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
     transition: background-color 0.2s ease;
+    text-align: center;
+    position: relative;
+    padding-right: 28px; /* Space for arrow */
 }
 
-.position-selector-wrapper:hover {
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-.position-selector-wrapper::after {
+.custom-select-trigger::after {
     content: '\f078'; /* Font Awesome chevron-down */
     font-family: "Font Awesome 6 Free";
     font-weight: 900;
@@ -222,22 +232,57 @@ hr {
     transform: translateY(-50%);
     color: rgba(255, 255, 255, 0.6);
     font-size: 12px;
-    pointer-events: none;
+    transition: transform 0.2s ease;
 }
 
-.player-card .player-position-select {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background: transparent;
-    border: none;
+.custom-select-wrapper.open .custom-select-trigger::after {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+.custom-select-wrapper:hover .custom-select-trigger {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.custom-select-options {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background-color: #3a4b3c; /* A bit lighter than card bg */
+    border: 1px solid var(--modern-border-color);
     border-radius: 6px;
-    padding: 8px 32px 8px 12px; /* Right padding to avoid text overlapping arrow */
+    list-style: none;
+    padding: 4px;
+    z-index: 20;
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.custom-select-wrapper.open .custom-select-options {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.custom-select-options li {
+    padding: 8px 12px;
     color: var(--text-light);
-    font-size: 13px;
-    font-weight: 500;
     cursor: pointer;
-    width: 100%;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: background-color 0.2s ease;
+}
+
+.custom-select-options li:hover {
+    background-color: var(--primary-color);
+    color: var(--background-dark);
+}
+
+.custom-select-options li.selected {
+    background-color: rgba(255, 255, 255, 0.1);
+    font-weight: 600;
 }
 
 .player-card-body {
@@ -680,5 +725,11 @@ hr {
         top: auto;
         border-right: 2px solid rgba(255, 255, 255, 0.6);
         border-bottom: none;
+    }
+
+    /* Mobildeki dikey sahayı basitleştir */
+    .penalty-area,
+    .goal-area {
+        display: none;
     }
 }

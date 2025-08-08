@@ -16,6 +16,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- OLAY DİNLEYİCİLERİ ---
     matchSizeSelect.addEventListener('change', generatePlayerRows);
     createTeamsButton.addEventListener('click', processAndDisplayTeams);
+
+    // Global click listener to close custom dropdowns
+    document.addEventListener('click', (e) => {
+        const openSelect = document.querySelector('.custom-select-wrapper.open');
+        if (openSelect && !openSelect.contains(e.target)) {
+            openSelect.classList.remove('open');
+        }
+    });
     resetButton.addEventListener('click', resetAll);
     downloadButton.addEventListener('click', downloadFieldImage);
     fillRandomButton.addEventListener('click', fillWithRandomPlayers);
@@ -99,8 +107,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             seenNames.add(name.toLowerCase());
 
-            const positionSelect = card.querySelector('.player-position-select');
-            if (positionSelect.value === 'GK') goalkeeperCount++;
+            const position = card.dataset.position;
+            if (position === 'GK') goalkeeperCount++;
 
             // Reading from range sliders works the same way, .value gives the number as a string
             const pace = Math.max(1, Math.min(100, parseInt(card.querySelector('.player-pace-input').value) || 50));
@@ -111,8 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             players.push({
                 id: `p${index}`, name, pace, technique, passing, shooting, defense,
-                power: calculateOverallPower({ pace, technique, passing, shooting, defense, position: positionSelect.value }),
-                position: positionSelect.value
+                power: calculateOverallPower({ pace, technique, passing, shooting, defense, position: position }),
+                position: position
             });
         });
 
@@ -318,18 +326,20 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 1; i <= playerCount; i++) {
             const card = document.createElement('div');
             card.className = 'player-card';
+            card.dataset.position = 'MID'; // Set default position
 
             card.innerHTML = `
             <div class="player-card-header">
                 <i class="fas fa-user-circle player-icon"></i>
                 <input type="text" class="player-name-input" placeholder="Oyuncu ${i}">
-                <div class="position-selector-wrapper">
-                    <select class="player-position-select">
-                        <option value="GK">KL</option>
-                        <option value="DEF">DF</option>
-                        <option value="MID" selected>OS</option>
-                        <option value="FWD">FV</option>
-                    </select>
+                <div class="custom-select-wrapper">
+                    <div class="custom-select-trigger">OS</div>
+                    <ul class="custom-select-options">
+                        <li data-value="GK">KL</li>
+                        <li data-value="DEF">DF</li>
+                        <li data-value="MID" class="selected">OS</li>
+                        <li data-value="FWD">FV</li>
+                    </ul>
                 </div>
             </div>
             <div class="player-card-body">
@@ -345,15 +355,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
             playerInputsContainer.appendChild(card);
 
-            // Add event listener to the name input for error handling
+            // --- EVENT LISTENERS FOR THE NEW CARD ---
             card.querySelector('.player-name-input').addEventListener('input', (e) => e.target.classList.remove('error'));
 
-            // Add event listeners for all sliders in this card
             card.querySelectorAll('.player-stat-slider').forEach(slider => {
                 const statControl = slider.closest('.stat-control');
                 const valueSpan = statControl.querySelector('.stat-value');
                 slider.addEventListener('input', (e) => {
                     if (valueSpan) valueSpan.textContent = e.target.value;
+                });
+            });
+
+            // Custom Select Logic
+            const selectWrapper = card.querySelector('.custom-select-wrapper');
+            const selectTrigger = card.querySelector('.custom-select-trigger');
+            const options = card.querySelectorAll('.custom-select-options li');
+
+            selectTrigger.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent global click listener from closing it immediately
+                // Close other open selects
+                document.querySelectorAll('.custom-select-wrapper.open').forEach(openSelect => {
+                    if (openSelect !== selectWrapper) {
+                        openSelect.classList.remove('open');
+                    }
+                });
+                selectWrapper.classList.toggle('open');
+            });
+
+            options.forEach(option => {
+                option.addEventListener('click', () => {
+                    // Update value
+                    const selectedValue = option.dataset.value;
+                    card.dataset.position = selectedValue;
+                    selectTrigger.textContent = option.textContent;
+
+                    // Update selected class
+                    options.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+
+                    // Close dropdown
+                    selectWrapper.classList.remove('open');
                 });
             });
         }
