@@ -1,0 +1,459 @@
+:root {
+    --primary-color: #1abc9c;
+    --background-dark: #1d2b1f;
+    --card-dark: #08370d;
+    --text-light: #ecf0f1;
+    --modern-input-bg: rgba(0, 0, 0, 0.25);
+    --modern-border-color: rgba(255, 255, 255, 0.15);
+    --blue-team: #3498db;
+    --red-team: #e74c3c;
+    --error-color: #e74c3c;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
+}
+
+body {
+    background: var(--background-dark);
+    color: var(--text-light);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid var(--modern-border-color);
+    margin: 24px 0;
+}
+
+.app-layout {
+    display: flex;
+    min-height: 100vh;
+    gap: 24px;
+    padding: 24px;
+}
+
+.main-content-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* KONTROL PANELİ */
+.control-panel {
+    width: 480px;
+    flex-shrink: 0;
+    padding: 24px;
+    background: var(--card-dark);
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--modern-border-color);
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.panel-header h2 {
+    font-size: 28px;
+    color: var(--primary-color);
+}
+
+.panel-header p {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 4px;
+    max-width: 300px;
+    margin-inline: auto;
+}
+
+.setting-group {
+    margin-bottom: 16px;
+}
+
+.setting-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.control-panel input,
+.control-panel select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--modern-border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--modern-input-bg);
+    color: var(--text-light);
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.control-panel input.error {
+    border-color: var(--error-color);
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.3);
+}
+
+.player-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.utility-button {
+    background: none;
+    border: 1px solid var(--modern-border-color);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.utility-button:hover {
+    background-color: var(--modern-input-bg);
+    color: white;
+}
+
+.player-inputs-header {
+    display: grid;
+    grid-template-columns: 1fr repeat(5, 50px) 90px;
+    gap: 8px;
+    padding: 0 4px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+}
+
+.player-inputs-header span:first-child {
+    text-align: left;
+}
+
+.player-input-row {
+    display: grid;
+    grid-template-columns: 1fr repeat(5, 50px) 90px;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.control-panel input[type="number"] {
+    text-align: center;
+    padding: 12px 4px;
+}
+
+/* Sayı inputları için daha az padding */
+
+.action-buttons-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: auto;
+}
+
+.action-buttons-grid .download {
+    grid-column: 1 / -1;
+}
+
+.action-button {
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.action-button.primary {
+    background-color: var(--primary-color);
+    color: var(--background-dark);
+}
+
+.action-button.secondary {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+.action-button.download {
+    background-color: #3b82f6;
+    color: white;
+}
+
+/* SAHA STİLLERİ */
+.football-field {
+    width: 100%;
+    background-image: repeating-linear-gradient(90deg, #103810, #103810 50px, #204a20 50px, #204a20 100px);
+    border-radius: 15px;
+    position: relative;
+    aspect-ratio: 3/2;
+    box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+    max-width: 1100px;
+    border: 4px solid rgba(255, 255, 255, 0.15);
+}
+
+.field-lines {
+    position: absolute;
+    inset: 0;
+    border: 3px solid rgba(255, 255, 255, 0.6);
+}
+
+.center-line {
+    position: absolute;
+    width: 3px;
+    height: 100%;
+    left: 50%;
+    background: rgba(255, 255, 255, 0.6);
+    transform: translateX(-50%);
+}
+
+.center-circle {
+    position: absolute;
+    width: 20%;
+    height: 30%;
+    border: 3px solid rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.penalty-area {
+    position: absolute;
+    border: 3px solid rgba(255, 255, 255, 0.6);
+}
+
+.penalty-area.top {
+    height: 40%;
+    width: 18%;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    border-left: none;
+}
+
+.penalty-area.bottom {
+    height: 40%;
+    width: 18%;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    border-right: none;
+}
+
+.goal-area {
+    position: absolute;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+}
+
+.goal-area.top {
+    height: 20%;
+    width: 7%;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    border-left: none;
+}
+
+.goal-area.bottom {
+    height: 20%;
+    width: 7%;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    border-right: none;
+}
+
+.player-puck {
+    position: absolute;
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    border: 2px solid white;
+    transform: translate(-50%, -50%);
+    transition: all 0.2s ease;
+    z-index: 10;
+    cursor: move;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.player-puck:active {
+    cursor: grabbing;
+    z-index: 11;
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+.player-puck .initial {
+    font-size: 22px;
+    line-height: 1;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.player-puck .name {
+    font-size: 11px;
+    margin-top: 3px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+/* ANALİZ PANELİ */
+.analysis-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.team-analysis-card {
+    background: var(--card-dark);
+    border: 1px solid var(--modern-border-color);
+    border-radius: 12px;
+    padding: 16px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.team-analysis-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.team-analysis-card h3 {
+    font-size: 18px;
+    margin-bottom: 12px;
+    border-bottom: 2px solid;
+    padding-bottom: 8px;
+}
+
+.team-analysis-card.team1 h3 {
+    border-color: var(--blue-team);
+}
+
+.team-analysis-card.team2 h3 {
+    border-color: var(--red-team);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.stat-item {
+    text-align: center;
+    background: var(--modern-input-bg);
+    padding: 8px;
+    border-radius: 6px;
+}
+
+.stat-item .value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.stat-item .label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.tactic-item .label {
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tactic-item .value {
+    font-size: 14px;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* MOBİL TASARIM (EN ÖNEMLİ KISIM) */
+@media (max-width: 900px) {
+    .app-layout {
+        flex-direction: column;
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .control-panel {
+        width: 100%;
+        order: 2;
+        /* Paneli alta al */
+    }
+
+    .main-content-area {
+        order: 1;
+    }
+
+    .player-inputs-header {
+        grid-template-columns: 1fr 1fr 1fr;
+        /* 3'lü grid */
+        text-align: left;
+    }
+
+    .player-inputs-header span:not(:first-child) {
+        display: none;
+    }
+
+    /* Başlıkları gizle, sadece "Oyuncu Adı" kalsın */
+
+    .player-input-row {
+        grid-template-columns: 1fr 1fr;
+        /* İsim bir satır, diğerleri alt satırda */
+        gap: 12px;
+        background: rgba(0, 0, 0, 0.1);
+        padding: 12px;
+        border-radius: 8px;
+    }
+
+    .player-input-row .player-name-input {
+        grid-column: 1 / -1;
+    }
+
+    /* İsim tam genişlik kaplasın */
+    .player-input-row .player-pace-input,
+    .player-input-row .player-tech-input,
+    .player-input-row .player-pass-input,
+    .player-input-row .player-shot-input,
+    .player-input-row .player-def-input,
+    .player-input-row .player-position-select {
+        grid-column: span 1;
+        /* Diğer inputlar yan yana gelsin */
+        /* Gerekirse daha fazla düzenleme yapılabilir */
+    }
+
+    .analysis-container {
+        grid-template-columns: 1fr;
+    }
+
+    /* Analiz kartları alt alta gelsin */
+}

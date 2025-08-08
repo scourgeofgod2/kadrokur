@@ -1,0 +1,336 @@
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- DOM ELEMENTLERİ ---
+    const matchSizeSelect = document.getElementById('matchSizeSelect');
+    const playerInputsContainer = document.getElementById('player-inputs-container');
+    const createTeamsButton = document.getElementById('createTeamsButton');
+    const resetButton = document.getElementById('resetButton');
+    const downloadButton = document.getElementById('downloadButton');
+    const fillRandomButton = document.getElementById('fillRandomButton');
+    const footballField = document.getElementById('footballField');
+    const analysisContainer = document.getElementById('analysis-container');
+
+    // --- OLAY DİNLEYİCİLERİ ---
+    matchSizeSelect.addEventListener('change', generatePlayerRows);
+    createTeamsButton.addEventListener('click', processAndDisplayTeams);
+    resetButton.addEventListener('click', resetAll);
+    downloadButton.addEventListener('click', downloadFieldImage);
+    fillRandomButton.addEventListener('click', fillWithRandomPlayers);
+
+    // --- BAŞLANGIÇ ---
+    generatePlayerRows();
+
+    // =======================================================================
+    // --- ANA KONTROL FONKSİYONLARI ---
+    // =======================================================================
+
+    /**
+     * Tüm süreci başlatan ana fonksiyon. Her "Oluştur" butonuna basıldığında çalışır.
+     */
+    function processAndDisplayTeams() {
+        clearPreviousResults();
+        const players = readAndValidatePlayers();
+        if (!players) return;
+
+        const balancedTeams = balanceTeamsWithGoalkeeperLogic(players);
+        displayTeamsOnField(balancedTeams);
+        displayTeamAnalysis(balancedTeams);
+    }
+
+    function resetAll() {
+        clearPreviousResults();
+        generatePlayerRows();
+    }
+
+    function clearPreviousResults() {
+        footballField.querySelectorAll('.player-puck, .field-team-name').forEach(el => el.remove());
+        analysisContainer.innerHTML = '';
+    }
+
+    // =======================================================================
+    // --- VERİ OKUMA, DOĞRULAMA VE DENGELEME ALGORİTMALARI ---
+    // =======================================================================
+
+    /**
+     * Input alanlarındaki oyuncu bilgilerini okur, doğrular ve işlenmeye hazır hale getirir.
+     */
+    function readAndValidatePlayers() {
+        const playerRows = playerInputsContainer.querySelectorAll('.player-input-row');
+        const players = [];
+        const invalidInputs = [];
+        const seenNames = new Set();
+        let goalkeeperCount = 0;
+
+        playerRows.forEach(row => row.querySelector('.player-name-input').classList.remove('error'));
+
+        playerRows.forEach((row, index) => {
+            const nameInput = row.querySelector('.player-name-input');
+            const name = nameInput.value.trim();
+
+            if (name === '') {
+                invalidInputs.push(nameInput);
+            } else if (seenNames.has(name.toLowerCase())) {
+                invalidInputs.push(nameInput);
+            }
+            seenNames.add(name.toLowerCase());
+
+            const positionSelect = row.querySelector('.player-position-select');
+            if (positionSelect.value === 'GK') goalkeeperCount++;
+
+            const pace = Math.max(1, Math.min(100, parseInt(row.querySelector('.player-pace-input').value) || 50));
+            const technique = Math.max(1, Math.min(100, parseInt(row.querySelector('.player-tech-input').value) || 50));
+            const passing = Math.max(1, Math.min(100, parseInt(row.querySelector('.player-pass-input').value) || 50));
+            const shooting = Math.max(1, Math.min(100, parseInt(row.querySelector('.player-shot-input').value) || 50));
+            const defense = Math.max(1, Math.min(100, parseInt(row.querySelector('.player-def-input').value) || 50));
+
+            players.push({
+                id: `p${index}`, name, pace, technique, passing, shooting, defense,
+                power: calculateOverallPower({ pace, technique, passing, shooting, defense, position: positionSelect.value }),
+                position: positionSelect.value
+            });
+        });
+
+        if (invalidInputs.length > 0) {
+            alert("Lütfen tüm oyuncu isimlerini girin ve isimlerin tekrar etmediğinden emin olun.");
+            invalidInputs.forEach(input => input.classList.add('error'));
+            return null;
+        }
+        if (goalkeeperCount > 2) {
+            alert("Toplamda en fazla 2 kaleci seçebilirsiniz!");
+            return null;
+        }
+        return players;
+    }
+
+    /**
+     * Bir oyuncunun genel gücünü, mevkisine göre ağırlıklı ortalama alarak hesaplar.
+     */
+    function calculateOverallPower(stats) {
+        const { pace, technique, passing, shooting, defense, position } = stats;
+        let power = 0;
+        switch (position) {
+            case 'GK': power = (defense * 0.6) + (passing * 0.2) + (pace * 0.1) + (technique * 0.1); break;
+            case 'DEF': power = (defense * 0.5) + (pace * 0.2) + (passing * 0.2) + (technique * 0.1); break;
+            case 'MID': power = (passing * 0.35) + (technique * 0.3) + (pace * 0.15) + (shooting * 0.1) + (defense * 0.1); break;
+            case 'FWD': power = (shooting * 0.4) + (pace * 0.3) + (technique * 0.2) + (passing * 0.1); break;
+            default: power = (pace + technique + passing + shooting + defense) / 5;
+        }
+        return Math.round(power);
+    }
+
+    /**
+     * Takımları oluştururken aynı güçteki oyuncuları karıştırarak rastgelelik ekler.
+     */
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function balanceTeamsWithGoalkeeperLogic(players) {
+        const goalkeepers = players.filter(p => p.position === 'GK');
+        const outfieldPlayers = players.filter(p => p.position !== 'GK');
+        let teamA = [], teamB = [];
+
+        if (goalkeepers.length > 0) { teamA.push(goalkeepers.shift()); }
+        if (goalkeepers.length > 0) { teamB.push(goalkeepers.shift()); }
+
+        // Aynı güçteki oyuncuları karıştırarak rastgelelik kat
+        const sortedOutfielders = outfieldPlayers.sort((a, b) => b.power - a.power);
+        const shuffledOutfielders = shuffleArray(sortedOutfielders);
+
+        let teamAPower = teamA.reduce((sum, p) => sum + p.power, 0);
+        let teamBPower = teamB.reduce((sum, p) => sum + p.power, 0);
+
+        shuffledOutfielders.forEach(player => {
+            if (teamAPower <= teamBPower) {
+                teamA.push(player);
+                teamAPower += player.power;
+            } else {
+                teamB.push(player);
+                teamBPower += player.power;
+            }
+        });
+        return { teamA, teamB };
+    }
+
+    // =======================================================================
+    // --- GÖRSELLEŞTİRME VE DİĞER FONKSİYONLAR (TAM VE EKSİKSİZ) ---
+    // =======================================================================
+
+    function displayTeamsOnField(teams) {
+        footballField.insertAdjacentHTML('beforeend', `<div class="field-team-name team1">Maviler</div>`);
+        footballField.insertAdjacentHTML('beforeend', `<div class="field-team-name team2">Kırmızılar</div>`);
+
+        const teamAPositions = calculatePositionsForTeam(teams.teamA, 'A');
+        teams.teamA.forEach(player => {
+            const position = teamAPositions[player.position].shift();
+            createPlayerPuck(player, position, 'team1');
+        });
+
+        const teamBPositions = calculatePositionsForTeam(teams.teamB, 'B');
+        teams.teamB.forEach(player => {
+            const position = teamBPositions[player.position].shift();
+            createPlayerPuck(player, position, 'team2');
+        });
+    }
+
+    function calculatePositionsForTeam(teamPlayers, side) {
+        const positions = { GK: [], DEF: [], MID: [], FWD: [] };
+        const x_offsets = (side === 'A') ? { GK: 8, DEF: 25, MID: 40, FWD: 45 } : { GK: 92, DEF: 75, MID: 60, FWD: 55 };
+
+        ['GK', 'DEF', 'MID', 'FWD'].forEach(posType => {
+            const playersInPosition = teamPlayers.filter(p => p.position === posType);
+            const count = playersInPosition.length;
+            if (count === 0) return;
+            const y_gap = 100 / (count + 1);
+            for (let i = 0; i < count; i++) {
+                positions[posType].push({ x: x_offsets[posType], y: y_gap * (i + 1) });
+            }
+        });
+        return positions;
+    }
+
+    function displayTeamAnalysis(teams) {
+        const teamA_Card = createAnalysisCard(teams.teamA, 'Maviler', 'team1');
+        const teamB_Card = createAnalysisCard(teams.teamB, 'Kırmızılar', 'team2');
+        analysisContainer.appendChild(teamA_Card);
+        analysisContainer.appendChild(teamB_Card);
+        setTimeout(() => {
+            teamA_Card.classList.add('visible');
+            teamB_Card.classList.add('visible');
+        }, 100);
+    }
+
+    function createAnalysisCard(team, name, teamClass) {
+        if (team.length === 0) return document.createElement('div');
+        const getAverage = (attr) => Math.round(team.reduce((sum, p) => sum + p[attr], 0) / team.length);
+        const avgPower = getAverage('power');
+        const avgPace = getAverage('pace');
+        const avgTech = getAverage('technique');
+        const avgPass = getAverage('passing');
+        const avgShot = getAverage('shooting');
+        const avgDef = getAverage('defense');
+        const tactic = generateTacticForTeam({ avgPace, avgTech, avgPass, avgShot, avgDef }, team);
+
+        const card = document.createElement('div');
+        card.className = `team-analysis-card ${teamClass}`;
+        card.innerHTML = `
+            <h3>${name} Analizi</h3>
+            <div class="stats-grid">
+                <div class="stat-item"><div class="value">${avgPower}</div><div class="label">Genel</div></div>
+                <div class="stat-item"><div class="value">${avgPace}</div><div class="label">Hız</div></div>
+                <div class="stat-item"><div class="value">${avgTech}</div><div class="label">Teknik</div></div>
+                <div class="stat-item"><div class="value">${avgPass}</div><div class="label">Pas</div></div>
+                <div class="stat-item"><div class="value">${avgShot}</div><div class="label">Şut</div></div>
+                <div class="stat-item"><div class="value">${avgDef}</div><div class="label">Defans</div></div>
+            </div>
+            <div class="tactic-item">
+                <div class="label"><i class="fas fa-bullseye"></i> Önerilen Taktik:</div>
+                <div class="value">${tactic}</div>
+            </div>
+        `;
+        return card;
+    }
+
+    function generatePlayerRows() {
+        const playerCount = parseInt(matchSizeSelect.value.split('-')[0]) * 2;
+        playerInputsContainer.innerHTML = '';
+
+        for (let i = 1; i <= playerCount; i++) {
+            const row = document.createElement('div');
+            row.className = 'player-input-row';
+            row.innerHTML = `
+                <input type="text" class="player-name-input" placeholder="Oyuncu ${i}">
+                <input type="number" class="player-pace-input" min="1" max="100" value="75">
+                <input type="number" class="player-tech-input" min="1" max="100" value="75">
+                <input type="number" class="player-pass-input" min="1" max="100" value="75">
+                <input type="number" class="player-shot-input" min="1" max="100" value="75">
+                <input type="number" class="player-def-input" min="1" max="100" value="75">
+                <select class="player-position-select">
+                    <option value="GK">Kaleci</option>
+                    <option value="DEF">Defans</option>
+                    <option value="MID" selected>Orta Saha</option>
+                    <option value="FWD">Forvet</option>
+                </select>
+            `;
+            row.querySelector('.player-name-input').addEventListener('input', (e) => e.target.classList.remove('error'));
+            playerInputsContainer.appendChild(row);
+        }
+    }
+
+    function createPlayerPuck(player, position, teamClass) {
+        if (!player || !position) return;
+        const puck = document.createElement('div');
+        puck.className = 'player-puck';
+        puck.style.left = `${position.x}%`;
+        puck.style.top = `${position.y}%`;
+        puck.style.backgroundColor = (teamClass === 'team1') ? 'var(--blue-team)' : 'var(--red-team)';
+        puck.innerHTML = `<span class="initial">${player.name.charAt(0).toUpperCase()}</span><span class="name">${player.name.split(' ')[0]}</span>`;
+        footballField.appendChild(puck);
+        makePlayerDraggable(puck);
+    }
+
+    function makePlayerDraggable(element) {
+        element.onmousedown = function (event) {
+            if (event.button !== 0) return;
+            event.preventDefault();
+            const fieldRect = footballField.getBoundingClientRect();
+            function onMouseMove(moveEvent) {
+                let x = ((moveEvent.clientX - fieldRect.left) / fieldRect.width) * 100;
+                let y = ((moveEvent.clientY - fieldRect.top) / fieldRect.height) * 100;
+                x = Math.max(4, Math.min(96, x));
+                y = Math.max(5, Math.min(95, y));
+                element.style.left = `${x}%`;
+                element.style.top = `${y}%`;
+            }
+            function onMouseUp() { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        };
+        element.ondragstart = () => false;
+    }
+
+    function generateTacticForTeam(stats, team) {
+        const { avgPace, avgTech, avgPass, avgShot, avgDef } = stats;
+        const defenderCount = team.filter(p => p.position === 'DEF').length;
+        if (avgShot > 80) return "Fırsat buldukça kaleyi yokla, uzaktan şut çek.";
+        if (avgPace > 80) return "Hızlı kanat oyuncularıyla rakip defansın arkasına koşular yap.";
+        if (avgPass > 80 && avgTech > 80) return "Kısa paslarla topa sahip ol ve oyunu kontrol et.";
+        if (defenderCount >= team.length / 2 && avgDef > 75) return "Kompakt savunma yap, kapılan toplarla hızlı hücuma çık.";
+        return "Dengeli ve kontrollü oyna, rakibin hatalarını kolla.";
+    }
+
+    function fillWithRandomPlayers() {
+        const names = ["Ahmet", "Burak", "Cem", "Deniz", "Emir", "Fatih", "Gökhan", "Hakan", "İlker", "Kerem", "Levent", "Mert", "Nasuh", "Ömer", "Polat", "Serkan", "Tuna", "Ufuk", "Volkan", "Yasin"];
+        playerInputsContainer.querySelectorAll('.player-input-row').forEach((row, index) => {
+            const nameInput = row.querySelector('.player-name-input');
+            if (nameInput.value === '') {
+                nameInput.value = names[Math.floor(Math.random() * names.length)];
+                row.querySelector('.player-pace-input').value = Math.floor(Math.random() * 40) + 50;
+                row.querySelector('.player-tech-input').value = Math.floor(Math.random() * 40) + 50;
+                row.querySelector('.player-pass-input').value = Math.floor(Math.random() * 40) + 50;
+                row.querySelector('.player-shot-input').value = Math.floor(Math.random() * 40) + 50;
+                row.querySelector('.player-def-input').value = Math.floor(Math.random() * 40) + 50;
+            }
+        });
+    }
+
+    function downloadFieldImage() {
+        downloadButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Hazırlanıyor...`;
+        downloadButton.disabled = true;
+        html2canvas(document.querySelector('.main-content-area'), { scale: 2, backgroundColor: null })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'kadrokur-mac-plani.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => console.error('İndirme hatası:', err))
+            .finally(() => {
+                downloadButton.innerHTML = `<i class="fas fa-camera"></i> İndir`;
+                downloadButton.disabled = false;
+            });
+    }
+});

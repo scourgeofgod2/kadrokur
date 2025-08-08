@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KadroKur - Elit Mühendislik</title>
+    <link rel="stylesheet" href="styles9.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="app-layout">
+        <!-- ===================================== -->
+        <!-- ===== KONTROL PANELİ ===== -->
+        <!-- ===================================== -->
+        <div class="control-panel">
+            <header class="panel-header">
+                <h2>Kadro Mühendisi</h2>
+                <p>Oyuncu yeteneklerini girin, en dengeli kadroları ve taktikleri anında görün.</p>
+            </header>
+
+            <div class="setting-group">
+                <label for="matchSizeSelect"><i class="fas fa-users"></i> Maç Büyüklüğü</label>
+                <select id="matchSizeSelect">
+                    <option value="5-5">5 vs 5</option>
+                    <option value="6-6">6 vs 6</option>
+                    <option value="7-7">7 vs 7</option>
+                    <option value="8-8">8 vs 8</option>
+                </select>
+            </div>
+
+            <hr>
+
+            <div class="player-list-header">
+                <h3>Oyuncu Havuzu</h3>
+                <button id="fillRandomButton" class="utility-button" title="Oyuncuları Rastgele Doldur"><i class="fas fa-magic-wand-sparkles"></i> Rastgele</button>
+            </div>
+            <div class="player-inputs-header">
+                <span>Oyuncu Adı</span>
+                <span>Hız</span>
+                <span>Tek.</span>
+                <span>Pas</span>
+                <span>Şut</span>
+                <span>Def.</span>
+                <span>Mevki</span>
+            </div>
+
+            <div id="player-inputs-container">
+                <!-- JS ile dolacak -->
+            </div>
+
+            <hr>
+
+            <div class="action-buttons-grid">
+                <button id="createTeamsButton" class="action-button primary">
+                    <i class="fas fa-sitemap"></i> Takımları Oluştur
+                </button>
+                <button id="resetButton" class="action-button secondary">
+                    <i class="fas fa-undo"></i> Sıfırla
+                </button>
+                <button id="downloadButton" class="action-button download">
+                    <i class="fas fa-camera"></i> İndir
+                </button>
+            </div>
+        </div>
+
+        <!-- ============================== -->
+        <!-- ===== SAHA VE ANALİZ ALANI ===== -->
+        <!-- ============================== -->
+        <div class="main-content-area">
+            <div id="footballField" class="football-field">
+                <!-- SAHA ÇİZGİLERİ (STATİK) -->
+                <div class="field-lines"></div>
+                <div class="center-line"></div>
+                <div class="center-circle"></div>
+                <div class="penalty-area top"></div>
+                <div class="penalty-area bottom"></div>
+                <div class="goal-area top"></div>
+                <div class="goal-area bottom"></div>
+                <!-- Oyuncular ve takım isimleri JS ile eklenecek -->
+            </div>
+
+            <div id="analysis-container" class="analysis-container">
+                <!-- Analiz kartları JS ile eklenecek -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="script9.js"></script>
+</body>
+
+</html>
